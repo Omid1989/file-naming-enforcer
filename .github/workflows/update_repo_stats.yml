@@ -70,7 +70,7 @@ jobs:
           EOF
           
           # محتوای اصلی پروژه
-          cat > project_content.md << 'EOF'
+          cat > project_content.md << 'PROJECT_EOF'
           # File Naming Enforcer
           A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like **React** and **Laravel**.
           
@@ -124,7 +124,7 @@ jobs:
           ```json
           {
             "preset": "react",
-            "rules": {},
+            "rules": {}
           }
           ```
           - Components: PascalCase (`Button.tsx`, `UserProfile.tsx`)
@@ -136,7 +136,7 @@ jobs:
           ```json
           {
             "preset": "laravel",
-            "rules": {},
+            "rules": {}
           }
           ```
           - Models/Controllers: PascalCase (`User.php`, `UserController.php`)
@@ -180,7 +180,7 @@ jobs:
           ## 🤝 Support
           **Made with ❤️ for developers who care about consistent code organization**
           
-          EOF
+          PROJECT_EOF
           
           # بررسی وجود فایل README
           if [ -f README.md ]; then
