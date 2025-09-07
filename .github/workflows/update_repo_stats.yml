@@ -2,24 +2,24 @@ name: Update Repository Stats in README
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # اجرای روزانه ساعت 00:00 UTC
-  workflow_dispatch:       # اجرا دستی
+    - cron: '0 0 * * *'   # اجرا روزانه ساعت 00:00 UTC
+  workflow_dispatch:       # امکان اجرا دستی
   push:
     branches:
-      - main               # فقط روی main اجرا بشه
+      - main               # فقط روی main اجرا شود
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write          # اجازه نوشتن در ریپو
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # همه history
 
       - name: Get repository stats
         id: stats
@@ -30,21 +30,21 @@ jobs:
           
           CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-
+          
           VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-
+          
           STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-
+          
           FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-
+          
           ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-
+          
           UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
-
+          
           echo "clones=$CLONES" >> $GITHUB_OUTPUT
           echo "views=$VIEWS" >> $GITHUB_OUTPUT
           echo "stars=$STARS" >> $GITHUB_OUTPUT
@@ -54,44 +54,41 @@ jobs:
 
       - name: Update README
         run: |
-          cat > stats_section.md <<EOF
-          ## 📊 Repository Stats
-          
-          | آمار | تعداد |
-          |------|--------|
-          | ⭐ ستاره‌ها | ${{ steps.stats.outputs.stars }} |
-          | 🍴 فورک‌ها | ${{ steps.stats.outputs.forks }} |
-          | 👀 بازدیدها (14 روز اخیر) | ${{ steps.stats.outputs.views }} |
-          | 📥 کلون‌ها (14 روز اخیر) | ${{ steps.stats.outputs.clones }} |
-          | 🐛 ایشوهای باز | ${{ steps.stats.outputs.issues }} |
-          
-          *آخرین بروزرسانی: ${{ steps.stats.outputs.updated }}*
-          EOF
-          
-          if [ -f README.md ]; then
-            sed -i '/## 📊 Repository Stats/,$d' README.md
-            cat stats_section.md >> README.md
-          else
-            cat stats_section.md > README.md
-          fi
+          CLONES=${{ steps.stats.outputs.clones }}
+          VIEWS=${{ steps.stats.outputs.views }}
+          STARS=${{ steps.stats.outputs.stars }}
+          FORKS=${{ steps.stats.outputs.forks }}
+          ISSUES=${{ steps.stats.outputs.issues }}
+          UPDATED=${{ steps.stats.outputs.updated }}
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-stats
-          base: main
-          commit-message: "📊 Update repository stats"
-          title: "📊 Update repository stats"
-          body: "Automated PR to update README with repository stats."
-          labels: automated pr
-          delete-branch: true
+          # حذف بخش آمار قبلی
+          sed -i '/## 📊 Repository Stats/,/^\*Last Updated:/d' README.md || true
 
-      - name: Summary
+          # اضافه کردن بخش آمار جدید
+          cat <<EOF >> README.md
+
+## 📊 Repository Stats
+
+| Metric | Count |
+|--------|-------|
+| ⭐ Stars | $STARS |
+| 🍴 Forks | $FORKS |
+| 👀 Views (last 14 days) | $VIEWS |
+| 📥 Clones (last 14 days) | $CLONES |
+| 🐛 Open Issues | $ISSUES |
+
+*Last Updated: $UPDATED*
+
+EOF
+
+      - name: Commit and push changes
         run: |
-          echo "## 📊 Stats Update Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- ⭐ Stars: ${{ steps.stats.outputs.stars }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🍴 Forks: ${{ steps.stats.outputs.forks }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 👀 Views: ${{ steps.stats.outputs.views }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 📥 Clones: ${{ steps.stats.outputs.clones }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐛 Open Issues: ${{ steps.stats.outputs.issues }}" >> $GITHUB_STEP_SUMMARY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add README.md
+            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
+            git push origin main
+          else
+            echo "ℹ️ No changes to commit"
