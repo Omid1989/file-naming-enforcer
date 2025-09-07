@@ -130,14 +130,4 @@ MIT License
 
 ## 📊 Repository Stats
 
-| آمار | تعداد |
-|------|--------|
-| ⭐ ستاره‌ها | 1 |
-| 🍴 فورک‌ها | 0 |
-| 👀 بازدیدها (14 روز اخیر) | <!--VIEWS-->214<!--VIEWS--> |
-| 📥 کلون‌ها (14 روز اخیر) | <!--CLONES-->51<!--CLONES--> |
-| 🐛 ایشوهای باز | 0 |
-
-*آخرین بروزرسانی: 2025-09-07 15:41:39*
-
-**Made with ❤️ for developers who care about consistent code organization**
+|**Made with ❤️ for developers who care about consistent code organization**
