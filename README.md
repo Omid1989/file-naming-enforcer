@@ -1,4 +1,6 @@
-
+<!-- STATS BADGE START -->
+![Views](https://img.shields.io/badge/Views-514-blue)  ![Clones](https://img.shields.io/badge/Clones-124-green)
+<!-- STATS BADGE END -->
 # File Naming Enforcer
 
 A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like **React** and **Laravel**.
@@ -131,6 +133,4 @@ MIT License
 
 |**Made with ❤️ for developers who care about consistent code organization**
 
-<!-- STATS BADGE START -->
-![Views](https://img.shields.io/badge/Views-514-blue)  ![Clones](https://img.shields.io/badge/Clones-124-green)
-<!-- STATS BADGE END -->
+
