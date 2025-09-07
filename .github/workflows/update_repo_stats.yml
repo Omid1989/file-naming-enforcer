@@ -1,57 +1,3 @@
-name: Update Repository Stats in README
-
-on:
-  schedule:
-    - cron: '0 0 * * *'   # Run daily at 00:00 UTC
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-
-jobs:
-  update-readme:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get repository stats
-        id: stats
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-
-          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-
-          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-
-          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-
-          FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-
-          ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-
-          UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
-
-          echo "clones=$CLONES" >> $GITHUB_OUTPUT
-          echo "views=$VIEWS" >> $GITHUB_OUTPUT
-          echo "stars=$STARS" >> $GITHUB_OUTPUT
-          echo "forks=$FORKS" >> $GITHUB_OUTPUT
-          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
-          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
-
       - name: Update or create README
         run: |
           CLONES=${{ steps.stats.outputs.clones }}
@@ -63,7 +9,7 @@ jobs:
 
           # Create README if it does not exist
           if [ ! -f README.md ]; then
-            cat > README.md << 'EOF'
+cat > README.md << 'EOF'
 # File Naming Enforcer
 A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like React and Laravel.
 
@@ -80,7 +26,7 @@ EOF
           sed -i '/## 📊 Repository Stats/,/^\*Last Updated:/d' README.md || true
 
           # Append updated stats section
-          cat <<EOF >> README.md
+cat <<EOF >> README.md
 ## 📊 Repository Stats
 
 | Metric | Count |
@@ -93,16 +39,3 @@ EOF
 
 *Last Updated: $UPDATED*
 EOF
-
-      - name: Commit and push changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if [ -n "$(git status --porcelain)" ]; then
-            git add README.md
-            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
-            git push origin main
-            echo "✅ README updated successfully!"
-          else
-            echo "ℹ️ No changes detected in README"
