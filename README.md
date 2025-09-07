@@ -128,6 +128,5 @@ MIT License
 
 ## 🤝 Support
 
-## 📊 Repository Stats
 
 |**Made with ❤️ for developers who care about consistent code organization**
