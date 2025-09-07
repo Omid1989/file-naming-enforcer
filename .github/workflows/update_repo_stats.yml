@@ -1,17 +1,17 @@
 name: Update Repository Stats in README
-
 on:
   schedule:
-    - cron: '0 0 * * *'  # اجرا هر روز ساعت 00:00
+    - cron: '0 0 * * *'  # اجرا هر روز ساعت 00:00 (تصحیح شد)
   workflow_dispatch:      # امکان اجرای دستی
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # نسخه جدیدتر
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get repository stats
         id: stats
@@ -20,13 +20,212 @@ jobs:
         run: |
           REPO="${{ github.repository }}"
           
-          # تعداد کلون‌ها
-          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO/traffic/clones | jq '.count')
+          # تعداد کلون‌ها (آخرین 14 روز)
+          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
           
-          # تعداد بازدیدها
-          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO/traffic/views | jq '.count')
+          # تعداد بازدیدها (آخرین 14 روز)
+          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
           
           # تعداد ستاره‌ها
-          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO | jq '.stargazers_count')
+          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
           
-          echo "::s
+          # تعداد فورک‌ها
+          FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
+          
+          # تعداد ایشوها
+          ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
+          
+          # تاریخ آخرین بروزرسانی
+          UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # تنظیم خروجی‌ها
+          echo "clones=$CLONES" >> $GITHUB_OUTPUT
+          echo "views=$VIEWS" >> $GITHUB_OUTPUT
+          echo "stars=$STARS" >> $GITHUB_OUTPUT
+          echo "forks=$FORKS" >> $GITHUB_OUTPUT
+          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
+          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+
+      - name: Update README
+        run: |
+          # ایجاد بخش آمار جدید
+          cat > stats_section.md << 'EOF'
+          ## 📊 Repository Stats
+          
+          | آمار | تعداد |
+          |------|--------|
+          | ⭐ ستاره‌ها | ${{ steps.stats.outputs.stars }} |
+          | 🍴 فورک‌ها | ${{ steps.stats.outputs.forks }} |
+          | 👀 بازدیدها (14 روز اخیر) | ${{ steps.stats.outputs.views }} |
+          | 📥 کلون‌ها (14 روز اخیر) | ${{ steps.stats.outputs.clones }} |
+          | 🐛 ایشوهای باز | ${{ steps.stats.outputs.issues }} |
+          
+          *آخرین بروزرسانی: ${{ steps.stats.outputs.updated }}*
+          
+          EOF
+          
+          # محتوای اصلی پروژه
+          cat > project_content.md << 'EOF'
+          # File Naming Enforcer
+          A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like **React** and **Laravel**.
+          
+          ## ✨ Features
+          - **🔄 Automatic Naming Enforcement**: Detects newly created files or folders and renames them according to your defined rules
+          - **⚙️ Configurable Rules**: Define custom naming rules in a `file-naming.config.json` file at the root of your project
+          - **📦 Framework Presets**: Built-in presets for popular frameworks:
+            - **React**: PascalCase for components, camelCase for hooks, kebab-case for CSS files
+            - **Laravel**: PascalCase for models/controllers, snake_case for blade templates, camelCase/kebab-case for JS/CSS
+          - **🎯 Flexible Rename Modes**:
+            - **Auto**: Automatically rename files/folders
+            - **Ask**: Prompt the user before renaming
+          
+          ## 🚀 Usage
+          ### 1. Configuration Setup
+          Create a `file-naming.config.json` file at the root of your project:
+          ```json
+          {
+            "preset": "react",
+            "rules": {
+              "src/utils/*.ts": "camelCase",
+              "components/**/*.tsx": "PascalCase",
+              "styles/**/*.css": "kebab-case"
+            },
+            "rename": "ask"
+          }
+          ```
+          
+          **Configuration Options:**
+          - `preset` (optional): Use `"react"` or `"laravel"` for predefined rules
+          - `rules` (optional): Custom glob patterns and their naming conventions
+          - `rename`: `"auto"` or `"ask"` (default: `"ask"`)
+          
+          ### 2. How It Works
+          When a new file or folder is created, the extension will:
+          1. Check if the name follows the configured rules
+          2. If it doesn't comply:
+             - **Auto mode**: Automatically rename the file/folder
+             - **Ask mode**: Prompt you before renaming
+          
+          ## 📝 Naming Conventions
+          | Convention     | Description                                           | Example                  |
+          | -------------- | ----------------------------------------------------- | ------------------------ |
+          | **PascalCase** | Each word starts with a capital letter, no separators | `MyFileName.tsx`         |
+          | **camelCase**  | Like PascalCase, but first letter is lowercase        | `myFileName.ts`          |
+          | **kebab-case** | Lowercase words separated by hyphens                  | `my-file-name.css`       |
+          | **snake_case** | Lowercase words separated by underscores              | `my_file_name.blade.php` |
+          
+          ## 🎯 Framework Presets
+          ### React Preset
+          ```json
+          {
+            "preset": "react",
+            "rules": {},
+          }
+          ```
+          - Components: PascalCase (`Button.tsx`, `UserProfile.tsx`)
+          - Hooks: camelCase (`useFetch.ts`, `useAuth.ts`)
+          - Styles: kebab-case (`main.css`, `user-profile.css`)
+          - Utils: camelCase (`helpers.ts`, `apiUtils.ts`)
+          
+          ### Laravel Preset
+          ```json
+          {
+            "preset": "laravel",
+            "rules": {},
+          }
+          ```
+          - Models/Controllers: PascalCase (`User.php`, `UserController.php`)
+          - Blade templates: snake_case (`user_profile.blade.php`)
+          - JavaScript: camelCase (`userUtils.js`)
+          - CSS: kebab-case (`user-styles.css`)
+          
+          ## 💡 Example Usage
+          **Configuration:**
+          ```json
+          {
+            "preset": "react",
+            "rules": {},
+            "rename": "auto"
+          }
+          ```
+          
+          **Automatic Renaming Behavior:**
+          - `components/button/index.tsx` → `components/Button/index.tsx`
+          - `hooks/useFetch.ts` → `hooks/useFetch.ts` ✓ (already correct)
+          - `styles/mainStyle.css` → `styles/main-style.css`
+          - `utils/apihelper.ts` → `utils/apiHelper.ts`
+          
+          ## 🛠️ Development
+          ### Contributing
+          1. **Fork** the repository
+          2. **Create** a feature branch: `git checkout -b feature-name`
+          3. **Commit** your changes: `git commit -m "Add feature"`
+          4. **Push** to the branch: `git push origin feature-name`
+          5. **Open** a pull request
+          
+          ### Local Development
+          1. Clone the repository
+          2. Run `npm install` to install dependencies
+          3. Open in VS Code
+          4. Press `F5` to launch the extension in development mode
+          
+          ## 📄 License
+          MIT License
+          
+          ## 🤝 Support
+          **Made with ❤️ for developers who care about consistent code organization**
+          
+          EOF
+          
+          # بررسی وجود فایل README
+          if [ -f README.md ]; then
+            # حذف بخش قبلی آمار (اگر وجود دارد)
+            sed -i '/## 📊 Repository Stats/,/^\*آخرین بروزرسانی:/d' README.md
+            
+            # بررسی اینکه آیا محتوای پروژه وجود دارد یا نه
+            if ! grep -q "# File Naming Enforcer" README.md; then
+              # اگر محتوای پروژه وجود ندارد، ابتدا آن را اضافه کن
+              cat project_content.md README.md > temp_readme.md
+              mv temp_readme.md README.md
+            fi
+            
+            # حالا آمار را اضافه کن
+            cat stats_section.md README.md > temp_readme.md
+            mv temp_readme.md README.md
+          else
+            # اگر README وجود ندارد، آن را با محتوای کامل ایجاد کن
+            cat project_content.md > README.md
+            cat stats_section.md >> README.md
+          fi
+          
+          # پاک کردن فایل‌های موقت
+          rm -f stats_section.md project_content.md
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # بررسی تغییرات
+          if [ -n "$(git status --porcelain)" ]; then
+            git add README.md
+            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
+            git push
+            echo "✅ README updated successfully!"
+          else
+            echo "ℹ️ No changes detected in README"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 📊 Stats Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ⭐ Stars: ${{ steps.stats.outputs.stars }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍴 Forks: ${{ steps.stats.outputs.forks }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 👀 Views: ${{ steps.stats.outputs.views }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📥 Clones: ${{ steps.stats.outputs.clones }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐛 Open Issues: ${{ steps.stats.outputs.issues }}" >> $GITHUB_STEP_SUMMARY
