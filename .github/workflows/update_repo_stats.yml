@@ -27,24 +27,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO="${{ github.repository }}"
-          
+
           CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-          
+
           VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-          
+
           STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-          
+
           FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-          
+
           ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-          
+
           UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
-          
+
           echo "clones=$CLONES" >> $GITHUB_OUTPUT
           echo "views=$VIEWS" >> $GITHUB_OUTPUT
           echo "stars=$STARS" >> $GITHUB_OUTPUT
@@ -81,7 +81,6 @@ EOF
 
           # Append updated stats section
           cat <<EOF >> README.md
-
 ## 📊 Repository Stats
 
 | Metric | Count |
@@ -93,7 +92,6 @@ EOF
 | 🐛 Open Issues | $ISSUES |
 
 *Last Updated: $UPDATED*
-
 EOF
 
       - name: Commit and push changes
