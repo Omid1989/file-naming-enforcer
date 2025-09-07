@@ -67,7 +67,8 @@ When a new file or folder is created, the extension will:
 
 ```json
 {
-  "preset": "react"
+  "preset": "react",
+  "rules": {},
 }
 ```
 
@@ -80,7 +81,8 @@ When a new file or folder is created, the extension will:
 
 ```json
 {
-  "preset": "laravel"
+  "preset": "laravel",
+  "rules": {},
 }
 ```
 
@@ -96,6 +98,7 @@ When a new file or folder is created, the extension will:
 ```json
 {
   "preset": "react",
+  "rules": {},
   "rename": "auto"
 }
 ```
@@ -126,7 +129,7 @@ When a new file or folder is created, the extension will:
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License 
 
 ## 🤝 Support
 
