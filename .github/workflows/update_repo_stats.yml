@@ -1,1 +1,66 @@
 
+name: Store Repo Stats History
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # هر روز نیمه شب اجرا
+  workflow_dispatch:
+
+jobs:
+  store-stats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Fetch repository traffic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          today=$(date +%F)  # YYYY-MM-DD
+          views=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/views \
+            | jq '.count')
+          clones=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones \
+            | jq '.count')
+
+          echo "Views: $views, Clones: $clones"
+
+          # فایل ذخیره آمار
+          stats_file="repo_stats_history.json"
+
+          # اگر فایل وجود ندارد، ایجاد یک آرایه جدید
+          if [ ! -f "$stats_file" ]; then
+            echo "[]" > "$stats_file"
+          fi
+
+          # اضافه کردن داده امروز به آرایه
+          jq --arg date "$today" --argjson views $views --argjson clones $clones \
+             '. += [{"date": $date, "views": $views, "clones": $clones}]' \
+             "$stats_file" > tmp.json && mv tmp.json "$stats_file"
+
+      - name: Commit stats file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b update-stats-history || git checkout update-stats-history
+          git add repo_stats_history.json
+          git commit -m "Add daily repo stats" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-stats-history
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add daily repo stats"
+          branch: update-stats-history
+          base: main
+          title: "Add daily repository stats"
+          body: "This PR adds daily repository stats to repo_stats_history.json automatically."
