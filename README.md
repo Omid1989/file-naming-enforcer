@@ -13,12 +13,6 @@ A Visual Studio Code extension that automatically enforces file and folder namin
   - **Auto**: Automatically rename files/folders
   - **Ask**: Prompt the user before renaming
 
-## 📥 Installation
-
-1. Clone or download this repository
-2. Open it in VS Code
-3. Press `F5` to run the extension in a new Extension Development Host window
-
 ## 🚀 Usage
 
 ### 1. Configuration Setup
@@ -38,7 +32,6 @@ Create a `file-naming.config.json` file at the root of your project:
 ```
 
 **Configuration Options:**
-
 - `preset` (optional): Use `"react"` or `"laravel"` for predefined rules
 - `rules` (optional): Custom glob patterns and their naming conventions
 - `rename`: `"auto"` or `"ask"` (default: `"ask"`)
@@ -46,7 +39,6 @@ Create a `file-naming.config.json` file at the root of your project:
 ### 2. How It Works
 
 When a new file or folder is created, the extension will:
-
 1. Check if the name follows the configured rules
 2. If it doesn't comply:
    - **Auto mode**: Automatically rename the file/folder
@@ -54,36 +46,34 @@ When a new file or folder is created, the extension will:
 
 ## 📝 Naming Conventions
 
-| Convention     | Description                                           | Example                  |
-| -------------- | ----------------------------------------------------- | ------------------------ |
-| **PascalCase** | Each word starts with a capital letter, no separators | `MyFileName.tsx`         |
-| **camelCase**  | Like PascalCase, but first letter is lowercase        | `myFileName.ts`          |
-| **kebab-case** | Lowercase words separated by hyphens                  | `my-file-name.css`       |
-| **snake_case** | Lowercase words separated by underscores              | `my_file_name.blade.php` |
+| Convention | Description | Example |
+|------------|-------------|---------|
+| **PascalCase** | Each word starts with a capital letter, no separators | `MyFileName.tsx` |
+| **camelCase** | Like PascalCase, but first letter is lowercase | `myFileName.ts` |
+| **kebab-case** | Lowercase words separated by hyphens | `my-file-name.css` |
+| **snake_case** | Lowercase words separated by underscores | `my_file_name.blade.php` |
 
 ## 🎯 Framework Presets
 
 ### React Preset
-
 ```json
 {
-  "preset": "react"
+  "preset": "react",
+  "rules": {}
 }
 ```
-
 - Components: PascalCase (`Button.tsx`, `UserProfile.tsx`)
 - Hooks: camelCase (`useFetch.ts`, `useAuth.ts`)
 - Styles: kebab-case (`main.css`, `user-profile.css`)
 - Utils: camelCase (`helpers.ts`, `apiUtils.ts`)
 
 ### Laravel Preset
-
 ```json
 {
-  "preset": "laravel"
+  "preset": "laravel",
+  "rules": {}
 }
 ```
-
 - Models/Controllers: PascalCase (`User.php`, `UserController.php`)
 - Blade templates: snake_case (`user_profile.blade.php`)
 - JavaScript: camelCase (`userUtils.js`)
@@ -92,16 +82,15 @@ When a new file or folder is created, the extension will:
 ## 💡 Example Usage
 
 **Configuration:**
-
 ```json
 {
   "preset": "react",
+  "rules": {},
   "rename": "auto"
 }
 ```
 
 **Automatic Renaming Behavior:**
-
 - `components/button/index.tsx` → `components/Button/index.tsx`
 - `hooks/useFetch.ts` → `hooks/useFetch.ts` ✓ (already correct)
 - `styles/mainStyle.css` → `styles/main-style.css`
@@ -111,7 +100,7 @@ When a new file or folder is created, the extension will:
 
 ### Contributing
 
-1. **Fork** the repository
+1. **Fork** the repository from [github.com/Omid1989/file-naming-enforcer](https://github.com/Omid1989/file-naming-enforcer)
 2. **Create** a feature branch: `git checkout -b feature-name`
 3. **Commit** your changes: `git commit -m "Add feature"`
 4. **Push** to the branch: `git push origin feature-name`
@@ -119,10 +108,20 @@ When a new file or folder is created, the extension will:
 
 ### Local Development
 
-1. Clone the repository
-2. Run `npm install` to install dependencies
-3. Open in VS Code
-4. Press `F5` to launch the extension in development mode
+1. Clone the repository: `git clone https://github.com/Omid1989/file-naming-enforcer.git`
+2. Navigate to the project: `cd file-naming-enforcer`
+3. Install dependencies: `npm install`
+4. Open in VS Code: `code .`
+5. Press `F5` to launch the extension in development mode
+
+### Building VSIX Package
+
+To create a `.vsix` package for distribution:
+```bash
+npm install -g vsce
+vsce package
+```
+This will generate `file-naming-enforcer-0.0.1.vsix` file.
 
 ## 📄 License
 
