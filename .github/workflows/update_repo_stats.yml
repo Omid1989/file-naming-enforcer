@@ -2,11 +2,12 @@ name: Update Repository Stats in README
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # اجرا هر روز 00:00 UTC
-  workflow_dispatch:
+    - cron: '0 0 * * *'   # اجرای روزانه ساعت 00:00 UTC
+  workflow_dispatch:       # اجرا دستی
   push:
     branches:
-      - main               # فقط روی main ا
+      - main               # فقط روی main اجرا بشه
+
 permissions:
   contents: write
   pull-requests: write
@@ -14,7 +15,6 @@ permissions:
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,17 +27,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO="${{ github.repository }}"
-
+          
           CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
+
           VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
+
           STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
+
           FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
+
           ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
+
           UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
 
           echo "clones=$CLONES" >> $GITHUB_OUTPUT
@@ -49,7 +54,7 @@ jobs:
 
       - name: Update README
         run: |
-          cat > stats_section.md << EOF
+          cat > stats_section.md <<EOF
           ## 📊 Repository Stats
           
           | آمار | تعداد |
@@ -64,35 +69,13 @@ jobs:
           EOF
           
           if [ -f README.md ]; then
-            sed -i '/## 📊 Repository Stats/,/\*آخرین بروزرسانی:/d' README.md
-            cat stats_section.md README.md > temp_readme.md
-            mv temp_readme.md README.md
+            sed -i '/## 📊 Repository Stats/,$d' README.md
+            cat stats_section.md >> README.md
           else
             cat stats_section.md > README.md
           fi
-          rm -f stats_section.md
-
-      - name: Commit changes to update-stats branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # برو به main و از اونجا branch جدید بساز
-          git checkout main
-          git checkout -B update-stats
-
-          if [ -n "$(git status --porcelain)" ]; then
-            git add README.md
-            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
-          else
-            echo "ℹ️ No changes to commit"
-          fi
-
-      - name: Push changes
-        run: git push origin update-stats --force
 
       - name: Create Pull Request
-        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -100,20 +83,15 @@ jobs:
           base: main
           commit-message: "📊 Update repository stats"
           title: "📊 Update repository stats"
-          body: |
-            Automated PR to update README with repository stats.
-            - ⭐ Stars: ${{ steps.stats.outputs.stars }}
-            - 🍴 Forks: ${{ steps.stats.outputs.forks }}
-            - 👀 Views: ${{ steps.stats.outputs.views }}
-            - 📥 Clones: ${{ steps.stats.outputs.clones }}
-            - 🐛 Open Issues: ${{ steps.stats.outputs.issues }}
-            - ⏰ Last Updated: ${{ steps.stats.outputs.updated }}
+          body: "Automated PR to update README with repository stats."
           labels: automated pr
           delete-branch: true
 
-      - name: Auto-merge Pull Request
-        if: steps.cpr.outputs.pull-request-number
+      - name: Summary
         run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --merge --delete-branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "## 📊 Stats Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ⭐ Stars: ${{ steps.stats.outputs.stars }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍴 Forks: ${{ steps.stats.outputs.forks }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 👀 Views: ${{ steps.stats.outputs.views }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📥 Clones: ${{ steps.stats.outputs.clones }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐛 Open Issues: ${{ steps.stats.outputs.issues }}" >> $GITHUB_STEP_SUMMARY
