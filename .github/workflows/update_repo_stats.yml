@@ -1,17 +1,23 @@
-name: Store Repo Stats History
+name: Store and Badge Repo Stats
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # هر روز نیمه شب
+    - cron: '0 0 * * *'   # هر روز نیمه شب UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
-  store-stats:
+  store-and-badge:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Fetch repository traffic
         env:
@@ -19,14 +25,11 @@ jobs:
         run: |
           today=$(date +%F)
           views=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            https://api.github.com/repos/${{ github.repository }}/traffic/views \
-            | jq '.count // 0')
+            https://api.github.com/repos/${{ github.repository }}/traffic/views | jq '.count // 0')
           clones=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            https://api.github.com/repos/${{ github.repository }}/traffic/clones \
-            | jq '.count // 0')
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones | jq '.count // 0')
 
           stats_file="repo_stats_history.json"
-
           if [ ! -f "$stats_file" ]; then
             echo "[]" > "$stats_file"
           fi
@@ -35,14 +38,43 @@ jobs:
              '. += [{"date": $date, "views": $views, "clones": $clones}]' \
              "$stats_file" > tmp.json && mv tmp.json "$stats_file"
 
+      - name: Generate badges and update README
+        run: |
+          readme_file="README.md"
+          stats_file="repo_stats_history.json"
+
+          # آخرین رکورد
+          latest=$(jq '.[-1]' $stats_file)
+          views=$(echo $latest | jq '.views')
+          clones=$(echo $latest | jq '.clones')
+
+          # ساخت badge با shields.io
+          views_badge="![Views](https://img.shields.io/badge/Views-$views-blue)"
+          clones_badge="![Clones](https://img.shields.io/badge/Clones-$clones-green)"
+
+          stats_section="<!-- STATS BADGE START -->\n$views_badge  $clones_badge\n<!-- STATS BADGE END -->"
+
+          if [ -f "$readme_file" ]; then
+            if grep -q "<!-- STATS BADGE START -->" "$readme_file"; then
+              sed -i '/<!-- STATS BADGE START -->/,/<!-- STATS BADGE END -->/c\'"$stats_section" "$readme_file"
+            else
+              echo -e "\n$stats_section" >> "$readme_file"
+            fi
+          else
+            echo -e "$stats_section" > "$readme_file"
+          fi
+
       - name: Create Pull Request with updated stats
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Add daily repo stats"
+          commit-message: "Update repository stats and badges"
           branch: update-stats-history
           base: main
-          title: "Add daily repository stats"
-          body: "This PR adds daily repository stats to repo_stats_history.json automatically."
+          title: "Update repository stats and badges"
+          body: |
+            Automated PR to update:
+            - repo_stats_history.json
+            - README badges for Views and Clones
           labels: automated pr
           delete-branch: true
