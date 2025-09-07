@@ -23,7 +23,7 @@ jobs:
 
       - name: Get clones
         id: clones
-        uses: octokit/request-action@v2
+        uses: octokit/request-action@v1
         with:
           route: GET /repos/${{ github.repository }}/traffic/clones
         env:
