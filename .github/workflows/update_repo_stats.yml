@@ -53,10 +53,12 @@ jobs:
           stats_section="<!-- STATS BADGE START -->\n$views_badge  $clones_badge\n<!-- STATS BADGE END -->"
 
           if [ -f "$readme_file" ]; then
+            # جایگزین کردن badges قبلی اگر وجود دارد
             if grep -q "<!-- STATS BADGE START -->" "$readme_file"; then
               sed -i '/<!-- STATS BADGE START -->/,/<!-- STATS BADGE END -->/c\'"$stats_section" "$readme_file"
             else
-              echo -e "\n$stats_section" >> "$readme_file"
+              # اضافه کردن badges به ابتدای README
+              echo -e "$stats_section\n$(cat $readme_file)" > "$readme_file"
             fi
           else
             echo -e "$stats_section" > "$readme_file"
