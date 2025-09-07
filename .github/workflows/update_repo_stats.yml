@@ -1,110 +1,48 @@
-name: Update Repository Stats in README
+name: Store Repo Stats History
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # اجرا هر روز 00:00 UTC
+    - cron: '0 0 * * *'  # هر روز نیمه شب
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
-  update-readme:
+  store-stats:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
-      - name: Get repository stats
-        id: stats
+      - name: Fetch repository traffic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          REPO="${{ github.repository }}"
-          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-          FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-          ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-          UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "clones=$CLONES" >> $GITHUB_OUTPUT
-          echo "views=$VIEWS" >> $GITHUB_OUTPUT
-          echo "stars=$STARS" >> $GITHUB_OUTPUT
-          echo "forks=$FORKS" >> $GITHUB_OUTPUT
-          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
-          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
-      - name: Update README
-        run: |
-          cat > stats_section.md << EOF
-          ## 📊 Repository Stats
-          
-          | آمار | تعداد |
-          |------|--------|
-          | ⭐ ستاره‌ها | ${{ steps.stats.outputs.stars }} |
-          | 🍴 فورک‌ها | ${{ steps.stats.outputs.forks }} |
-          | 👀 بازدیدها (14 روز اخیر) | ${{ steps.stats.outputs.views }} |
-          | 📥 کلون‌ها (14 روز اخیر) | ${{ steps.stats.outputs.clones }} |
-          | 🐛 ایشوهای باز | ${{ steps.stats.outputs.issues }} |
-          
-          *آخرین بروزرسانی: ${{ steps.stats.outputs.updated }}*
-          EOF
-          
-          if [ -f README.md ]; then
-            sed -i '/## 📊 Repository Stats/,/\*آخرین بروزرسانی:/d' README.md
-            cat stats_section.md README.md > temp_readme.md
-            mv temp_readme.md README.md
-          else
-            cat stats_section.md > README.md
-          fi
-          rm -f stats_section.md
-      - name: Commit changes to update-stats branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # برو به main و از اونجا branch جدید بساز
-          git checkout main
-          git checkout -B update-stats
-          if [ -n "$(git status --porcelain)" ]; then
-            git add README.md
-            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
-          else
-            echo "ℹ️ No changes to commit"
-          fi
-      - name: Push changes
-        run: git push origin update-stats --force
+          today=$(date +%F)
+          views=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/views \
+            | jq '.count // 0')
+          clones=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones \
+            | jq '.count // 0')
 
-      - name: Create Pull Request
-        id: cpr
+          stats_file="repo_stats_history.json"
+
+          if [ ! -f "$stats_file" ]; then
+            echo "[]" > "$stats_file"
+          fi
+
+          jq --arg date "$today" --argjson views $views --argjson clones $clones \
+             '. += [{"date": $date, "views": $views, "clones": $clones}]' \
+             "$stats_file" > tmp.json && mv tmp.json "$stats_file"
+
+      - name: Create Pull Request with updated stats
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-stats
+          commit-message: "Add daily repo stats"
+          branch: update-stats-history
           base: main
-          commit-message: "📊 Update repository stats"
-          title: "📊 Update repository stats"
-          body: |
-            Automated PR to update README with repository stats.
-            - ⭐ Stars: ${{ steps.stats.outputs.stars }}
-            - 🍴 Forks: ${{ steps.stats.outputs.forks }}
-            - 👀 Views: ${{ steps.stats.outputs.views }}
-            - 📥 Clones: ${{ steps.stats.outputs.clones }}
-            - 🐛 Open Issues: ${{ steps.stats.outputs.issues }}
-            - ⏰ Last Updated: ${{ steps.stats.outputs.updated }}
+          title: "Add daily repository stats"
+          body: "This PR adds daily repository stats to repo_stats_history.json automatically."
           labels: automated pr
           delete-branch: true
-
-      - name: Auto-merge Pull Request
-        if: steps.cpr.outputs.pull-request-number
-        run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --merge --delete-branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
