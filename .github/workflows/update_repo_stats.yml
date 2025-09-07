@@ -1,48 +1,42 @@
-name: Generate Stats Badges
+name: Update README Stats
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # هر روز ساعت 00:00
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
-  badges:
+  update-readme:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get views
+      - name: Get views count
         id: views
-        uses: octokit/request-action@v2
-        with:
-          route: GET /repos/${{ github.repository }}/traffic/views
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get clones
-        id: clones
-        uses: octokit/request-action@v1
-        with:
-          route: GET /repos/${{ github.repository }}/traffic/clones
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create badges
         run: |
-          mkdir -p docs/badges
-          views=$(jq '.count' <<< "${{ steps.views.outputs.data }}")
-          clones=$(jq '.count' <<< "${{ steps.clones.outputs.data }}")
-          
-          echo "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='20'><rect width='150' height='20' fill='#555'/><text x='75' y='14' fill='#fff' font-family='Verdana' font-size='11' text-anchor='middle'>👀 Views: $views</text></svg>" > docs/badges/views.svg
+          views=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/views | jq '.count')
+          echo "views=$views" >> $GITHUB_OUTPUT
 
-          echo "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='20'><rect width='150' height='20' fill='#555'/><text x='75' y='14' fill='#fff' font-family='Verdana' font-size='11' text-anchor='middle'>📥 Clones: $clones</text></svg>" > docs/badges/clones.svg
+      - name: Get clones count
+        id: clones
+        run: |
+          clones=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones | jq '.count')
+          echo "clones=$clones" >> $GITHUB_OUTPUT
 
-      - name: Commit & push badges
+      - name: Update README
+        run: |
+          sed -i "s/<!--VIEWS-->[0-9]*<!--VIEWS-->/<!--VIEWS-->${{ steps.views.outputs.views }}<!--VIEWS-->/" README.md
+          sed -i "s/<!--CLONES-->[0-9]*<!--CLONES-->/<!--CLONES-->${{ steps.clones.outputs.clones }}<!--CLONES-->/" README.md
+          now=$(date '+%Y-%m-%d %H:%M:%S')
+          sed -i "s/آخرین بروزرسانی: .*/آخرین بروزرسانی: $now/" README.md
+
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/badges/*.svg
-          git commit -m "Update stats badges"
+          git add README.md
+          git commit -m "Update repository stats"
           git push
