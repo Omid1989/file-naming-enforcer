@@ -1,3 +1,59 @@
+name: Update Repository Stats in README
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *'    # اجرا روزانه ساعت 00:00 UTC
+  workflow_dispatch:        # اجازه اجرای دستی
+
+permissions:
+  contents: write           # اجازه نوشتن در repository
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2️⃣ Get repository stats
+      - name: Get repository stats
+        id: stats
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          
+          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
+          
+          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
+          
+          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
+          
+          FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
+          
+          ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
+          
+          UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          echo "clones=$CLONES" >> $GITHUB_OUTPUT
+          echo "views=$VIEWS" >> $GITHUB_OUTPUT
+          echo "stars=$STARS" >> $GITHUB_OUTPUT
+          echo "forks=$FORKS" >> $GITHUB_OUTPUT
+          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
+          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+
+      # 3️⃣ Update or create README
       - name: Update or create README
         run: |
           CLONES=${{ steps.stats.outputs.clones }}
@@ -7,7 +63,7 @@
           ISSUES=${{ steps.stats.outputs.issues }}
           UPDATED=${{ steps.stats.outputs.updated }}
 
-          # Create README if it does not exist
+          # اگر README وجود ندارد، ایجاد کن
           if [ ! -f README.md ]; then
 cat > README.md << 'EOF'
 # File Naming Enforcer
@@ -22,10 +78,10 @@ A Visual Studio Code extension that automatically enforces file and folder namin
 EOF
           fi
 
-          # Remove previous stats section if exists
+          # حذف بخش آمار قبلی
           sed -i '/## 📊 Repository Stats/,/^\*Last Updated:/d' README.md || true
 
-          # Append updated stats section
+          # اضافه کردن آمار جدید
 cat <<EOF >> README.md
 ## 📊 Repository Stats
 
@@ -39,3 +95,16 @@ cat <<EOF >> README.md
 
 *Last Updated: $UPDATED*
 EOF
+
+      # 4️⃣ Commit and push changes
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add README.md
+            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
+            git push
+            echo "✅ README updated successfully!"
+          else
+            echo "ℹ️ No changes detected in README"
