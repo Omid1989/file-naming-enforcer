@@ -3,7 +3,7 @@ name: Update Repository Stats in README
 on:
   schedule:
     - cron: '0 0 * * *'   # اجرا هر روز 00:00 UTC
-  workflow_dispatch:       # اجرای دستی
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,19 +28,14 @@ jobs:
 
           CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-
           VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-
           STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-
           FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-
           ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-
           UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
 
           echo "clones=$CLONES" >> $GITHUB_OUTPUT
@@ -73,17 +68,17 @@ jobs:
           else
             cat stats_section.md > README.md
           fi
-
           rm -f stats_section.md
 
-      - name: Commit changes
+      - name: Commit changes to update-stats branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # ایجاد برنچ جدید (یا سوئیچ بهش)
+          # برو به main و از اونجا branch جدید بساز
+          git checkout main
           git checkout -B update-stats
-          
+
           if [ -n "$(git status --porcelain)" ]; then
             git add README.md
             git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
@@ -92,23 +87,31 @@ jobs:
           fi
 
       - name: Push changes
-        run: |
-          git push origin update-stats --force
+        run: git push origin update-stats --force
 
       - name: Create Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: update-stats
+          base: main
           commit-message: "📊 Update repository stats"
           title: "📊 Update repository stats"
           body: |
-            This PR updates the repository stats in the README file.
+            Automated PR to update README with repository stats.
             - ⭐ Stars: ${{ steps.stats.outputs.stars }}
             - 🍴 Forks: ${{ steps.stats.outputs.forks }}
             - 👀 Views: ${{ steps.stats.outputs.views }}
             - 📥 Clones: ${{ steps.stats.outputs.clones }}
             - 🐛 Open Issues: ${{ steps.stats.outputs.issues }}
             - ⏰ Last Updated: ${{ steps.stats.outputs.updated }}
-          labels: |
-            automated pr
+          labels: automated pr
+          delete-branch: true
+
+      - name: Auto-merge Pull Request
+        if: steps.cpr.outputs.pull-request-number
+        run: |
+          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --merge --delete-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
