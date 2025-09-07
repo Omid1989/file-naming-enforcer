@@ -127,8 +127,4 @@ MIT License
 
 ## 🤝 Support
 
-If you encounter any issues or have feature requests, please [open an issue](https://github.com/Omid1989/file-naming-enforcer/issues) on GitHub.
-
----
-
 **Made with ❤️ for developers who care about consistent code organization**
