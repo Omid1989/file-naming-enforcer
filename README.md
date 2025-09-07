@@ -132,5 +132,5 @@ MIT License
 |**Made with ❤️ for developers who care about consistent code organization**
 
 <!-- STATS BADGE START -->
-![Views](https://img.shields.io/badge/Views-438-blue)  ![Clones](https://img.shields.io/badge/Clones-99-green)
+![Views](https://img.shields.io/badge/Views-514-blue)  ![Clones](https://img.shields.io/badge/Clones-124-green)
 <!-- STATS BADGE END -->
