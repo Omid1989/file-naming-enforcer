@@ -1,3 +1,15 @@
+## 📊 Repository Stats
+
+| آمار | تعداد |
+|------|--------|
+| ⭐ ستاره‌ها | 1 |
+| 🍴 فورک‌ها | 0 |
+| 👀 بازدیدها (14 روز اخیر) | 0 |
+| 📥 کلون‌ها (14 روز اخیر) | 0 |
+| 🐛 ایشوهای باز | 0 |
+
+*آخرین بروزرسانی: 2025-09-07 15:41:39*
+
 # File Naming Enforcer
 
 A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like **React** and **Laravel**.
