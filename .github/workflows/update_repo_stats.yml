@@ -2,14 +2,14 @@ name: Update Repository Stats in README
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # اجرا روزانه ساعت 00:00 UTC
-  workflow_dispatch:       # امکان اجرا دستی
+    - cron: '0 0 * * *'   # Run daily at 00:00 UTC
+  workflow_dispatch:
   push:
     branches:
-      - main               # فقط روی main اجرا شود
+      - main
 
 permissions:
-  contents: write          # اجازه نوشتن در ریپو
+  contents: write
 
 jobs:
   update-readme:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # همه history
+          fetch-depth: 0
 
       - name: Get repository stats
         id: stats
@@ -52,7 +52,7 @@ jobs:
           echo "issues=$ISSUES" >> $GITHUB_OUTPUT
           echo "updated=$UPDATED" >> $GITHUB_OUTPUT
 
-      - name: Update README
+      - name: Update or create README
         run: |
           CLONES=${{ steps.stats.outputs.clones }}
           VIEWS=${{ steps.stats.outputs.views }}
@@ -61,10 +61,25 @@ jobs:
           ISSUES=${{ steps.stats.outputs.issues }}
           UPDATED=${{ steps.stats.outputs.updated }}
 
-          # حذف بخش آمار قبلی
+          # Create README if it does not exist
+          if [ ! -f README.md ]; then
+            cat > README.md << 'EOF'
+# File Naming Enforcer
+A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like React and Laravel.
+
+## ✨ Features
+- Automatic naming enforcement
+- Configurable rules via file-naming.config.json
+- Built-in presets for React and Laravel
+- Auto or Ask rename modes
+
+EOF
+          fi
+
+          # Remove previous stats section if exists
           sed -i '/## 📊 Repository Stats/,/^\*Last Updated:/d' README.md || true
 
-          # اضافه کردن بخش آمار جدید
+          # Append updated stats section
           cat <<EOF >> README.md
 
 ## 📊 Repository Stats
@@ -90,5 +105,6 @@ EOF
             git add README.md
             git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
             git push origin main
+            echo "✅ README updated successfully!"
           else
-            echo "ℹ️ No changes to commit"
+            echo "ℹ️ No changes detected in README"
