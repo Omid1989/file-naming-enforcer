@@ -13,12 +13,6 @@ A Visual Studio Code extension that automatically enforces file and folder namin
   - **Auto**: Automatically rename files/folders
   - **Ask**: Prompt the user before renaming
 
-## 📥 Installation
-
-1. Clone or download this repository
-2. Open it in VS Code
-3. Press `F5` to run the extension in a new Extension Development Host window
-
 ## 🚀 Usage
 
 ### 1. Configuration Setup
