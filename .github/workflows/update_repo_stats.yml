@@ -1,0 +1,44 @@
+name: Update Repository Stats in README
+
+on:
+  schedule:
+    - cron: '0 0 * * *' 
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get repository stats
+        id: stats
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO/traffic/clones | jq '.count')
+          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO/traffic/views | jq '.count')
+          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$REPO | jq '.stargazers_count')
+          echo "::set-output name=clones::$CLONES"
+          echo "::set-output name=views::$VIEWS"
+          echo "::set-output name=stars::$STARS"
+
+      - name: Update README.md
+        run: |
+          CLONES=${{ steps.stats.outputs.clones }}
+          VIEWS=${{ steps.stats.outputs.views }}
+          STARS=${{ steps.stats.outputs.stars }}
+          sed -i "s/تعداد کلون‌ها: [0-9]*/تعداد کلون‌ها: $CLONES/" README.md
+          sed -i "s/تعداد بازدیدها: [0-9]*/تعداد بازدیدها: $VIEWS/" README.md
+          sed -i "s/تعداد ستاره‌ها: [0-9]*/تعداد ستاره‌ها: $STARS/" README.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Update repository stats" || echo "No changes to commit"
+          git push
