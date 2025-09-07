@@ -1,94 +1,48 @@
-name: Update Repository Stats in README
+name: Generate Stats Badges
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # روزانه ساعت 00:00 UTC
-  workflow_dispatch:      # امکان اجرای دستی
-
-permissions:
-  contents: write         # اجازه نوشتن روی ریپوزیتوری
+    - cron: '0 0 * * *'  # هر روز ساعت 00:00
+  workflow_dispatch:
 
 jobs:
-  update-readme:
+  badges:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Get repository stats
-        id: stats
+      - name: Get views
+        id: views
+        uses: octokit/request-action@v2
+        with:
+          route: GET /repos/${{ github.repository }}/traffic/views
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get clones
+        id: clones
+        uses: octokit/request-action@v2
+        with:
+          route: GET /repos/${{ github.repository }}/traffic/clones
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create badges
         run: |
-          REPO="${{ github.repository }}"
+          mkdir -p docs/badges
+          views=$(jq '.count' <<< "${{ steps.views.outputs.data }}")
+          clones=$(jq '.count' <<< "${{ steps.clones.outputs.data }}")
           
-          CLONES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/traffic/clones" | jq '.count // 0')
-          VIEWS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/traffic/views" | jq '.count // 0')
-          STARS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO" | jq '.stargazers_count // 0')
-          FORKS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO" | jq '.forks_count // 0')
-          ISSUES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO" | jq '.open_issues_count // 0')
-          UPDATED=$(date '+%Y-%m-%d %H:%M:%S')
-          
-          echo "clones=$CLONES" >> $GITHUB_OUTPUT
-          echo "views=$VIEWS" >> $GITHUB_OUTPUT
-          echo "stars=$STARS" >> $GITHUB_OUTPUT
-          echo "forks=$FORKS" >> $GITHUB_OUTPUT
-          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
-          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+          echo "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='20'><rect width='150' height='20' fill='#555'/><text x='75' y='14' fill='#fff' font-family='Verdana' font-size='11' text-anchor='middle'>👀 Views: $views</text></svg>" > docs/badges/views.svg
 
-      - name: Update or create README
+          echo "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='20'><rect width='150' height='20' fill='#555'/><text x='75' y='14' fill='#fff' font-family='Verdana' font-size='11' text-anchor='middle'>📥 Clones: $clones</text></svg>" > docs/badges/clones.svg
+
+      - name: Commit & push badges
         run: |
-          CLONES=${{ steps.stats.outputs.clones }}
-          VIEWS=${{ steps.stats.outputs.views }}
-          STARS=${{ steps.stats.outputs.stars }}
-          FORKS=${{ steps.stats.outputs.forks }}
-          ISSUES=${{ steps.stats.outputs.issues }}
-          UPDATED=${{ steps.stats.outputs.updated }}
-
-          # اگر README وجود ندارد، ایجاد کن
-          if [ ! -f README.md ]; then
-cat > README.md << 'EOF'
-# File Naming Enforcer
-A Visual Studio Code extension that automatically enforces file and folder naming conventions based on project-specific rules or predefined presets for popular frameworks like React and Laravel.
-
-## ✨ Features
-- Automatic naming enforcement
-- Configurable rules via file-naming.config.json
-- Built-in presets for React and Laravel
-- Auto or Ask rename modes
-
-EOF
-          fi
-
-          # حذف بخش قبلی آمار اگر وجود داشته باشد
-          sed -i '/## 📊 Repository Stats/,/^\*Last Updated:/d' README.md || true
-
-          # اضافه کردن آمار جدید
-cat <<EOF >> README.md
-## 📊 Repository Stats
-
-| Metric | Count |
-|--------|-------|
-| ⭐ Stars | $STARS |
-| 🍴 Forks | $FORKS |
-| 👀 Views (last 14 days) | $VIEWS |
-| 📥 Clones (last 14 days) | $CLONES |
-| 🐛 Open Issues | $ISSUES |
-
-*Last Updated: $UPDATED*
-EOF
-
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add README.md
-            git commit -m "📊 Update repository stats - $(date '+%Y-%m-%d')"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/badges/*.svg
+          git commit -m "Update stats badges"
+          git push
