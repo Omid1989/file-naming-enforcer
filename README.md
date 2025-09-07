@@ -127,4 +127,12 @@ MIT License
 
 ## 🤝 Support
 
+# My Project
+
+## Repository Stats
+Clones: 0  
+Views: 0  
+Stars: 0
+
+
 **Made with ❤️ for developers who care about consistent code organization**
