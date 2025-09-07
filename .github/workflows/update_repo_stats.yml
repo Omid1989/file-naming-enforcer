@@ -1,15 +1,15 @@
 name: Update Repository Stats in README
 on:
   schedule:
-    - cron: '0 0 * * *'  # اجرا هر روز ساعت 00:00 (تصحیح شد)
-  workflow_dispatch:      # امکان اجرای دستی
+    - cron: '0 0 * * *'  # Run daily at 00:00 UTC
+  workflow_dispatch:      # Allow manual execution
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4  # نسخه جدیدتر
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -137,6 +137,7 @@ jobs:
           {
             "preset": "laravel",
             "rules": {}
+          }
           }
           ```
           - Models/Controllers: PascalCase (`User.php`, `UserController.php`)
