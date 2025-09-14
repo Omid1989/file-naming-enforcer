@@ -132,7 +132,8 @@ MIT License
 ## Recommended VS Code Extension
 
 [![File Naming Enforcer](https://img.shields.io/visual-studio-marketplace/v/omid1989.file-naming-enforcer?label=File%20Naming%20Enforcer&color=blue&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=omid1989.file-naming-enforcer)
-[![GitHub stars](https://img.shields.io/github/stars/USERNAME/REPO?style=social)](https://github.com/USERNAME/REPO/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/Omid1989/file-naming-enforcer?style=social)](https://github.com/Omid1989/file-naming-enforcer/stargazers)
+
 
 
 |**Made with ❤️ for developers who care about consistent code organization**
