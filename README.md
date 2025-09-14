@@ -129,6 +129,9 @@ When a new file or folder is created, the extension will:
 MIT License 
 
 ## 🤝 Support
+## Recommended VS Code Extension
+
+[![File Naming Enforcer](https://img.shields.io/visual-studio-marketplace/v/omid1989.file-naming-enforcer?label=File%20Naming%20Enforcer&color=blue&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=omid1989.file-naming-enforcer)
 
 
 |**Made with ❤️ for developers who care about consistent code organization**
