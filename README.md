@@ -1,5 +1,5 @@
 <!-- STATS BADGE START -->
-![Views](https://img.shields.io/badge/Views-1002-blue)  ![Clones](https://img.shields.io/badge/Clones-253-green)
+![Views](https://img.shields.io/badge/Views-15-blue)  ![Clones](https://img.shields.io/badge/Clones-32-green)
 <!-- STATS BADGE END -->
 # File Naming Enforcer
 
