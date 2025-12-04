@@ -2,7 +2,7 @@ name: Store and Badge Repo Stats
 
 on:
   schedule:
-    - cron: '0 0 * * 0'   # هر یکشنبه ساعت 00:00 UTC
+    - cron: '0 0 */14 * *'   # هر ۱۴ روز ساعت 00:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -24,16 +24,21 @@ jobs:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           today=$(date +%F)
+
+          # گرفتن داده‌های views و clones
           views=$(curl -s -H "Authorization: token $PAT_TOKEN" \
             https://api.github.com/repos/${{ github.repository }}/traffic/views | jq '.count // 0')
           clones=$(curl -s -H "Authorization: token $PAT_TOKEN" \
             https://api.github.com/repos/${{ github.repository }}/traffic/clones | jq '.count // 0')
 
           stats_file="repo_stats_history.json"
+
+          # ایجاد فایل در صورت نبود
           if [ ! -f "$stats_file" ]; then
             echo "[]" > "$stats_file"
           fi
 
+          # اضافه کردن داده‌های امروز به تاریخچه
           jq --arg date "$today" --argjson views $views --argjson clones $clones \
              '. += [{"date": $date, "views": $views, "clones": $clones}]' \
              "$stats_file" > tmp.json && mv tmp.json "$stats_file"
@@ -43,17 +48,17 @@ jobs:
           readme_file="README.md"
           stats_file="repo_stats_history.json"
 
-          latest=$(jq '.[-1]' $stats_file)
-          views=$(echo $latest | jq '.views')
-          clones=$(echo $latest | jq '.clones')
+          # محاسبه مجموع کل views و clones
+          total_views=$(jq '[.[].views] | add' $stats_file)
+          total_clones=$(jq '[.[].clones] | add' $stats_file)
 
-          views_badge="![Views](https://img.shields.io/badge/Views-$views-blue)"
-          clones_badge="![Clones](https://img.shields.io/badge/Clones-$clones-green)"
+          views_badge="![Total Views](https://img.shields.io/badge/Total%20Views-$total_views-blue)"
+          clones_badge="![Total Clones](https://img.shields.io/badge/Total%20Clones-$total_clones-green)"
 
           stats_section="<!-- STATS BADGE START -->\n$views_badge  $clones_badge\n<!-- STATS BADGE END -->"
 
           if [ -f "$readme_file" ]; then
-            # جایگزین کردن badges قبلی اگر وجود دارد
+            # جایگزینی badges قبلی اگر وجود دارد
             if grep -q "<!-- STATS BADGE START -->" "$readme_file"; then
               sed -i '/<!-- STATS BADGE START -->/,/<!-- STATS BADGE END -->/c\'"$stats_section" "$readme_file"
             else
@@ -75,6 +80,6 @@ jobs:
           body: |
             Automated PR to update:
             - repo_stats_history.json
-            - README badges for Views and Clones
+            - README badges for Total Views and Total Clones
           labels: automated pr
           delete-branch: true
